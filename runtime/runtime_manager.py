@@ -112,6 +112,10 @@ class RuntimeManager:
             
             self.agents[agent.agent_id] = agent
             self.logger.info(f"Registered agent: {agent.agent_id} ({agent.name})")
+        
+        print("打印所有已经注册置的智能体ID")
+        for item in self.agents:
+            print(item)
     
     def unregister_agent(self, agent_id: str) -> None:
         """

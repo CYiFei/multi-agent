@@ -62,6 +62,7 @@ class MessageRouter:
         """处理路由到特定智能体的消息"""
         # 这里可以添加路由级别的中间件逻辑
         # 例如：消息验证、日志记录、指标收集等
+        print(f"Agent注册时添加的回调")
         pass
     
     def route_message(self, message: Message) -> bool:
@@ -94,6 +95,7 @@ class MessageRouter:
         
         # 3. 检查是否为单个智能体消息
         with self._route_lock:
+            print("单个智能体消息")
             if message.receiver_id in self.agent_routes:
                 topic = self.agent_routes[message.receiver_id]
                 self.pubsub_bus.publish(topic, message)

@@ -227,7 +227,7 @@ class BasicAgent(Agent):
         """
         # 这里可以添加智能体的主动行为逻辑
         # 例如：定期检查状态、执行计划任务等
-        
+        self.logger.debug(f"Main loop executed for agent {self.agent_id} with status {self.status.value}")
         if self.status == AgentStatus.ACTIVE:
             # 示例：每5秒记录一次心跳
             current_time = time.time()
