@@ -8,6 +8,9 @@ from .lifecycle import LifecycleManager
 from .state_manager import StateManager
 from messaging.message import Message, MessageType
 from messaging.router import MessageRouter
+from .task_engine import TaskEngine
+from .task_planner import TaskPlanner
+from .collaboration import DialogueManager, ConsensusMechanism, ConflictResolver
 
 class BasicAgent(Agent):
     """基础智能体实现"""
@@ -37,6 +40,13 @@ class BasicAgent(Agent):
         self.state_manager = StateManager(agent_id, persistent_state, state_storage_path)
         self.lifecycle = LifecycleManager(self)
         self.logger = logging.getLogger(f"agent.{agent_id}")
+        
+        # 新增核心功能组件
+        self.task_engine = TaskEngine(self)
+        self.task_planner = TaskPlanner(self)
+        self.dialogue_manager = DialogueManager(self)
+        self.consensus_mechanism = ConsensusMechanism(self)
+        self.conflict_resolver = ConflictResolver(self)
         
         # 注册到路由器
         self.router.register_agent(agent_id, f"agent.{agent_id}")
