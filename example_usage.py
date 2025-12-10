@@ -1,6 +1,7 @@
 import logging
 import time
 from runtime.runtime_manager import RuntimeManager
+from runtime.monitor import ExecutionMonitor
 from agents.agent_impl import BasicAgent
 from messaging.message import MessageType
 
@@ -73,6 +74,28 @@ def main():
     # 等待更多时间以观察心跳
     print("Waiting to observe heartbeat...")
     time.sleep(6)
+    
+    # 添加监控相关测试代码
+    print("\n=== 监控功能测试 ===")
+    
+    # 获取系统指标
+    monitor = runtime.execution_monitor
+    system_metrics = monitor.get_system_metrics()
+    print(f"系统指标: {system_metrics}")
+    
+    # 获取特定智能体指标
+    agent1_metrics = monitor.get_agent_metrics("agent_001")
+    agent2_metrics = monitor.get_agent_metrics("agent_002")
+    print(f"Agent 001 指标: {agent1_metrics}")
+    print(f"Agent 002 指标: {agent2_metrics}")
+    
+    # 生成完整监控报告
+    report = monitor.generate_report()
+    print(f"监控报告生成时间: {report['timestamp']}")
+    print(f"系统指标: {report['system_metrics']}")
+    print("各智能体报告:")
+    for agent_id, metrics in report['agent_reports'].items():
+        print(f"  {agent_id}: {metrics}")
     
     # 停止系统
     print("Shutting down system...")

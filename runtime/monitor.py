@@ -52,6 +52,8 @@ class ExecutionMonitor:
     def _collect_metrics(self) -> None:
         """收集系统指标"""
         metrics = self.get_system_metrics()
+        print("metrics: ")
+        print(metrics)
         self.logger.debug(f"System metrics: {metrics}")
         
         # 检查是否有性能问题
@@ -64,7 +66,7 @@ class ExecutionMonitor:
     def _check_system_health(self) -> None:
         """检查系统健康状态"""
         system_status = self.runtime_manager.get_system_status()
-        
+        print("system_status:", system_status)
         # 检查消息队列
         if system_status["message_queue_size"] > 100:
             self.logger.warning(f"High message queue size: {system_status['message_queue_size']}")
