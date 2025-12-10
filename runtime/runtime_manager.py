@@ -7,8 +7,10 @@ from messaging.pubsub import PubSubBus
 from messaging.router import MessageRouter
 from agents.agent_impl import BasicAgent
 from agents.base_agent import AgentStatus
+from .monitor import ExecutionMonitor
+from .types import RuntimeManagerInterface
 
-class RuntimeManager:
+class RuntimeManager(RuntimeManagerInterface):
     """运行时管理器"""
     
     _instance = None
@@ -39,8 +41,7 @@ class RuntimeManager:
         self._monitor_thread = None
         self._stop_event = threading.Event()
         
-        # 新增执行监控器 (延迟导入以避免循环依赖)
-        from .monitor import ExecutionMonitor
+        # 新增执行监控器
         self.execution_monitor = ExecutionMonitor(self)
         self.execution_monitor.start_monitoring()
 

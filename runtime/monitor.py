@@ -4,11 +4,12 @@ import time
 import logging
 from agents.base_agent import AgentStatus
 from agents.task import TaskStatus
+from .types import RuntimeManagerInterface
 
 class ExecutionMonitor:
     """执行监控器"""
     
-    def __init__(self, runtime_manager):
+    def __init__(self, runtime_manager: RuntimeManagerInterface):
         self.runtime_manager = runtime_manager
         self.logger = logging.getLogger("execution_monitor")
         self.monitoring = False
