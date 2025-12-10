@@ -1,11 +1,12 @@
-from typing import Dict, List, Any, Optional, Set
+from typing import Dict, List, Any, Optional, Set, TYPE_CHECKING
 from enum import Enum
 import uuid
 import time
 import logging
-from .agent_impl import BasicAgent
 from messaging.message import Message, MessageType
-from runtime.runtime_manager import RuntimeManager
+
+if TYPE_CHECKING:
+    from .agent_impl import BasicAgent
 
 class ConversationState(Enum):
     """对话状态"""
@@ -29,7 +30,7 @@ class ConsensusMethod(Enum):
 class DialogueManager:
     """对话管理器"""
     
-    def __init__(self, agent: BasicAgent):
+    def __init__(self, agent: 'BasicAgent'):
         self.agent = agent
         self.logger = logging.getLogger(f"dialogue_manager.{agent.agent_id}")
         self.active_conversations: Dict[str, Dict[str, Any]] = {}
@@ -227,7 +228,7 @@ class DialogueManager:
 class ConsensusMechanism:
     """共识机制"""
     
-    def __init__(self, agent: BasicAgent):
+    def __init__(self, agent: 'BasicAgent'):
         self.agent = agent
         self.logger = logging.getLogger(f"consensus_mechanism.{agent.agent_id}")
         self.active_consensus_processes: Dict[str, Dict[str, Any]] = {}
@@ -429,7 +430,7 @@ class ConsensusMechanism:
 class ConflictResolver:
     """冲突解决器"""
     
-    def __init__(self, agent: BasicAgent):
+    def __init__(self, agent: 'BasicAgent'):
         self.agent = agent
         self.logger = logging.getLogger(f"conflict_resolver.{agent.agent_id}")
         

@@ -3,13 +3,12 @@ import threading
 import time
 import logging
 from agents.base_agent import AgentStatus
-from agents.task_engine import TaskStatus
-from .runtime_manager import RuntimeManager
+from agents.task import TaskStatus
 
 class ExecutionMonitor:
     """执行监控器"""
     
-    def __init__(self, runtime_manager: RuntimeManager):
+    def __init__(self, runtime_manager):
         self.runtime_manager = runtime_manager
         self.logger = logging.getLogger("execution_monitor")
         self.monitoring = False

@@ -1,8 +1,12 @@
-from typing import Dict, List, Any, Optional, Tuple
+from typing import Dict, List, Any, Optional
 import logging
-from .task_engine import Task, TaskStatus
-from .agent_impl import BasicAgent
-from runtime.runtime_manager import RuntimeManager
+from .task import Task, TaskStatus
+from messaging.message import Message
+
+# 使用TYPE_CHECKING进行类型检查时导入
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from .agent_impl import BasicAgent
 
 class TaskDecompositionStrategy:
     """任务分解策略基类"""
@@ -101,7 +105,7 @@ class TaskAllocationStrategy:
     def __init__(self):
         self.logger = logging.getLogger("task_allocation")
     
-    def allocate(self, tasks: List[Task], agents: Dict[str, BasicAgent], context: Dict[str, Any]) -> None:
+    def allocate(self, tasks: List[Task], agents: Dict[str, 'BasicAgent'], context: Dict[str, Any]) -> None:
         """
         将任务分配给智能体
         
@@ -119,7 +123,7 @@ class RoundRobinAllocation(TaskAllocationStrategy):
         super().__init__()
         self.last_agent_index = 0
     
-    def allocate(self, tasks: List[Task], agents: Dict[str, BasicAgent], context: Dict[str, Any]) -> None:
+    def allocate(self, tasks: List[Task], agents: Dict[str, 'BasicAgent'], context: Dict[str, Any]) -> None:
         """轮询方式分配任务"""
         agent_ids = list(agents.keys())
         if not agent_ids:
@@ -134,7 +138,7 @@ class RoundRobinAllocation(TaskAllocationStrategy):
 class LoadBalancedAllocation(TaskAllocationStrategy):
     """负载均衡分配策略"""
     
-    def allocate(self, tasks: List[Task], agents: Dict[str, BasicAgent], context: Dict[str, Any]) -> None:
+    def allocate(self, tasks: List[Task], agents: Dict[str, 'BasicAgent'], context: Dict[str, Any]) -> None:
         """基于智能体负载情况分配任务"""
         if not agents:
             self.logger.warning("No agents available for task allocation")
@@ -158,7 +162,7 @@ class LoadBalancedAllocation(TaskAllocationStrategy):
 class PriorityBasedAllocation(TaskAllocationStrategy):
     """优先级分配策略"""
     
-    def allocate(self, tasks: List[Task], agents: Dict[str, BasicAgent], context: Dict[str, Any]) -> None:
+    def allocate(self, tasks: List[Task], agents: Dict[str, 'BasicAgent'], context: Dict[str, Any]) -> None:
         """基于任务优先级和智能体能力分配任务"""
         if not agents:
             self.logger.warning("No agents available for task allocation")
@@ -181,7 +185,7 @@ class PriorityBasedAllocation(TaskAllocationStrategy):
                 if agent_ids:
                     task.assign_to(agent_ids[hash(task.task_id) % len(agent_ids)])
     
-    def _find_best_agent(self, task: Task, agents: Dict[str, BasicAgent], 
+    def _find_best_agent(self, task: Task, agents: Dict[str, 'BasicAgent'], 
                          capabilities: Dict[str, List[str]]) -> Optional[str]:
         """查找最适合处理任务的智能体"""
         task_type = task.payload.get("task_type", "default")
@@ -201,7 +205,7 @@ class PriorityBasedAllocation(TaskAllocationStrategy):
 class TaskPlanner:
     """任务规划器"""
     
-    def __init__(self, agent: BasicAgent):
+    def __init__(self, agent: 'BasicAgent'):
         self.agent = agent
         self.logger = logging.getLogger(f"task_planner.{agent.agent_id}")
         self.decomposition_strategy = ComplexTaskDecomposition()
@@ -237,6 +241,7 @@ class TaskPlanner:
             self.logger.info(f"Decomposed task {task.task_id} into {len(subtasks)} subtasks")
             
             # 3. 获取可用智能体
+            from runtime.runtime_manager import RuntimeManager
             runtime = RuntimeManager()
             agents = runtime.get_all_agents()
             
@@ -257,6 +262,7 @@ class TaskPlanner:
     
     def _get_system_context(self) -> Dict[str, Any]:
         """获取系统上下文信息"""
+        from runtime.runtime_manager import RuntimeManager
         runtime = RuntimeManager()
         agents = runtime.get_all_agents()
         
@@ -277,6 +283,7 @@ class TaskPlanner:
         """提交任务执行"""
         if task.assigned_agent:
             # 发送任务分配消息给指定智能体
+            from runtime.runtime_manager import RuntimeManager
             runtime = RuntimeManager()
             agent = runtime.get_agent(task.assigned_agent)
             if agent:
