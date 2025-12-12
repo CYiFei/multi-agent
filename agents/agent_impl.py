@@ -247,11 +247,10 @@ class BasicAgent(Agent):
         current_time = time.time()
         self.state_manager.set("last_heartbeat", current_time)
         self.logger.debug(f"Heartbeat from agent {self.agent_id}")
-        if self.status == AgentStatus.ACTIVE:
-            # 示例：每5秒记录一次心跳
-            current_time = time.time()
-            last_heartbeat = self.state_manager.get("last_heartbeat", 0)
-            
-            if current_time - last_heartbeat > 5:
-                self.state_manager.set("last_heartbeat", current_time)
-                self.logger.debug(f"Heartbeat from agent {self.agent_id}")
+        # 不管什么状态都要更新心跳
+        current_time = time.time()
+        last_heartbeat = self.state_manager.get("last_heartbeat", 0)
+        
+        if current_time - last_heartbeat > 5:
+            self.state_manager.set("last_heartbeat", current_time)
+            self.logger.debug(f"Heartbeat from agent {self.agent_id}")

@@ -68,13 +68,37 @@ def main():
         print(f"已发送消息，ID: {msg_id}")
         
         # 等待处理（增加等待时间）
-        time.sleep(6)
+        wait_time = 15  # 增加等待时间以确保消息完全处理
+        elapsed_time = 0
+        check_interval = 2
         
-        # 显示对话历史
-        history = llm_agent.get_conversation_history()
-        print(f"当前对话历史 ({len(history)} 条):")
-        for entry in history:
-            print(f"  {entry['role']}: {entry['content']}")
+        # 循环检查直到超时或收到回复
+        while elapsed_time < wait_time:
+            time.sleep(check_interval)
+            elapsed_time += check_interval
+            
+            # 显示系统状态
+            system_status = runtime.get_system_status()
+            print(f"系统状态: {system_status}")
+            
+            # 显示对话历史
+            history = llm_agent.get_conversation_history()
+            print(f"当前对话历史 ({len(history)} 条):")
+            
+            # 检查是否有新的回复（检查最后一条是否是assistant的回复）
+            if history and history[-1]['role'] == 'assistant':
+                # 如果最新的消息是assistant的回复，说明已经处理完了
+                break
+                
+            print(f"等待回复中... ({elapsed_time}/{wait_time} 秒)")
+
+    # 添加最终的对话历史展示
+    print("\n--- 最终对话历史 ---")
+    final_history = llm_agent.get_conversation_history()
+    print(f"最终对话历史 ({len(final_history)} 条):")
+    for i, entry in enumerate(final_history):
+        print(f"  {i+1}. {entry['role']}: {entry['content'][:100]}{'...' if len(entry['content']) > 100 else ''}")
+
 
     # 测试任务处理功能
     print("\n--- 测试任务处理功能 ---")
@@ -90,7 +114,7 @@ def main():
     print(f"已发送任务消息，ID: {task_msg_id}")
     
     # 等待处理
-    time.sleep(3)
+    time.sleep(50)
     
     # 获取系统状态
     system_status = runtime.get_system_status()

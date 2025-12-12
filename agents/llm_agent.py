@@ -56,6 +56,12 @@ class LLMAgent(BasicAgent):
         """处理聊天消息"""
         self.logger.info(f"Received chat message from {message.sender_id}")
         
+        # 检查是否为自己发送的回复消息，避免循环处理
+        if (message.sender_id == self.agent_id and 
+            message.content.get("agent_id") == self.agent_id):
+            self.logger.debug("Ignoring self-sent reply message to prevent loop")
+            return {"status": "ignored", "message": "Self-sent reply message ignored"}
+        
         # 获取用户消息内容
         user_message = message.content.get("text", "")
         self.logger.debug(f"User message content: {user_message}")
@@ -96,23 +102,29 @@ class LLMAgent(BasicAgent):
             self.logger.error(f"Error generating LLM response: {e}", exc_info=True)
             error_response = "抱歉，我在生成回复时遇到了问题。请稍后再试。"
             
-            # 发送错误回复
-            error_msg_id = self.send_message(
-                receiver_id=message.sender_id,
-                msg_type="chat_message",
-                content={
-                    "text": error_response,
-                    "agent_id": self.agent_id,
-                    "timestamp": time.time(),
-                    "error": str(e)
-                },
-                conversation_id=message.conversation_id
-            )
+            # 添加错误信息到对话历史，方便调试
+            self._add_to_history("assistant", error_response)
             
-            self.logger.info(f"Sent error message with ID: {error_msg_id}")
+            # 发送错误回复
+            try:
+                error_msg_id = self.send_message(
+                    receiver_id=message.sender_id,
+                    msg_type="chat_message",
+                    content={
+                        "text": error_response,
+                        "agent_id": self.agent_id,
+                        "timestamp": time.time(),
+                        "error": str(e)
+                    },
+                    conversation_id=message.conversation_id
+                )
+                
+                self.logger.info(f"Sent error message with ID: {error_msg_id}")
+            except Exception as send_error:
+                self.logger.error(f"Failed to send error message: {send_error}", exc_info=True)
             
             return {"status": "error", "message": str(e)}
-        
+    
     def _handle_task_with_llm(self, message: Message) -> Dict[str, Any]:
         """使用LLM处理任务消息"""
         self.logger.info(f"Processing task with LLM: {message.content.get('task_id')}")
@@ -151,16 +163,26 @@ class LLMAgent(BasicAgent):
         # 构造提示词
         prompt = f"用户说: {user_message}\n请给出合适的回复："
         
+        # 确保对话历史不为空且格式正确
+        valid_history = []
+        for item in self.conversation_history[-self.max_history_length:]:
+            if isinstance(item, dict) and 'role' in item and 'content' in item:
+                valid_history.append(item)
+        
         # 调用LLM适配器生成文本
         response = self.llm_adapter.generate_text(
             prompt, 
-            chat_history=self.conversation_history[-self.max_history_length:]
+            chat_history=valid_history
         )
         
         return response
     
     def _add_to_history(self, role: str, content: str) -> None:
         """添加消息到对话历史"""
+        # 确保内容不为空
+        if not content:
+            return
+            
         self.conversation_history.append({
             "role": role,
             "content": content,
@@ -168,7 +190,7 @@ class LLMAgent(BasicAgent):
         })
         
         # 保持历史记录在最大长度内
-        if len(self.conversation_history) > self.max_history_length:
+        while len(self.conversation_history) > self.max_history_length:
             self.conversation_history.pop(0)
     
     def get_conversation_history(self) -> List[Dict[str, str]]:

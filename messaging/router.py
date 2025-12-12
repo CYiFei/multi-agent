@@ -67,15 +67,19 @@ class MessageRouter:
         """处理路由到特定智能体的消息"""
         # 这里可以添加路由级别的中间件逻辑
         # 例如：消息验证、日志记录、指标收集等
+        # 不再使用全局锁，改为仅保护字典访问
+        agent = None
         with self._route_lock:
             if agent_id in self.agent_instances:
                 agent = self.agent_instances[agent_id]
-                try:
-                    agent.handle_message(message)
-                except Exception as e:
-                    print(f"Error handling message in agent {agent_id}: {e}")
-            else:
-                print(f"No agent instance found for agent_id: {agent_id}")
+        
+        if agent:
+            try:
+                agent.handle_message(message)
+            except Exception as e:
+                print(f"Error handling message in agent {agent_id}: {e}")
+        else:
+            print(f"No agent instance found for agent_id: {agent_id}")
     
     def route_message(self, message: Message) -> bool:
         """路由消息到目标"""
@@ -90,32 +94,40 @@ class MessageRouter:
         # 2. 检查是否为组消息
         if message.receiver_id.startswith("group:"):
             group_id = message.receiver_id[6:]  # 去掉"group:"前缀
+            group_members = None
             with self._route_lock:
                 if group_id in self.group_routes:
-                    for agent_id in self.group_routes[group_id]:
-                        if agent_id in self.agent_routes:
-                            topic = self.agent_routes[agent_id]
-                            # 创建消息副本，避免修改原始消息
-                            msg_copy = Message(
-                                sender_id=message.sender_id,
-                                receiver_id=agent_id,
-                                msg_type=message.msg_type,
-                                content=message.content,
-                                priority=message.priority,
-                                conversation_id=message.conversation_id,
-                                metadata=message.metadata.copy()
-                            )
-                            self.pubsub_bus.publish(topic, msg_copy)
-                            self.logger.debug(f"Published message {message.message_id} to group member {agent_id}")
-                    return True
+                    group_members = self.group_routes[group_id][:]
+            
+            if group_members:
+                for agent_id in group_members:
+                    with self._route_lock:
+                        topic = self.agent_routes.get(agent_id)
+                    
+                    if topic:
+                        # 创建消息副本，避免修改原始消息
+                        msg_copy = Message(
+                            sender_id=message.sender_id,
+                            receiver_id=agent_id,
+                            msg_type=message.msg_type,
+                            content=message.content,
+                            priority=message.priority,
+                            conversation_id=message.conversation_id,
+                            metadata=message.metadata.copy()
+                        )
+                        self.pubsub_bus.publish(topic, msg_copy)
+                        self.logger.debug(f"Published message {message.message_id} to group member {agent_id}")
+                return True
         
         # 3. 检查是否为单个智能体消息
+        topic = None
         with self._route_lock:
-            if message.receiver_id in self.agent_routes:
-                topic = self.agent_routes[message.receiver_id]
-                self.pubsub_bus.publish(topic, message)
-                self.logger.debug(f"Published message {message.message_id} to agent {message.receiver_id} on topic {topic}")
-                return True
+            topic = self.agent_routes.get(message.receiver_id)
+        
+        if topic:
+            self.pubsub_bus.publish(topic, message)
+            self.logger.debug(f"Published message {message.message_id} to agent {message.receiver_id} on topic {topic}")
+            return True
         
         # 4. 尝试回退处理器
         for handler in self.fallback_handlers:
@@ -126,6 +138,7 @@ class MessageRouter:
         # 5. 无路由找到
         self.logger.warning(f"No route found for message to {message.receiver_id}")
         return False
+    
     def get_routes(self) -> Dict[str, str]:
         """获取所有注册的路由"""
         with self._route_lock:
