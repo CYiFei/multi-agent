@@ -8,12 +8,16 @@ from agents.agent_impl import BasicAgent
 from agents.task import Task
 from messaging.router import MessageRouter
 from messaging.pubsub import PubSubBus
-from runtime.runtime_manager import RuntimeManager
+
+# 删除 RuntimeManager 的导入，改为在需要时局部导入
+# from runtime.runtime_manager import RuntimeManager
+
 
 class AgentBehaviorSimulator:
     """智能体行为模拟器"""
     
-    def __init__(self, runtime_manager: RuntimeManager):
+    def __init__(self, runtime_manager):
+        # 由于不能直接导入 RuntimeManager 类，我们只使用实例
         self.runtime_manager = runtime_manager
         self.simulation_active = False
         self.simulated_agents: Dict[str, BasicAgent] = {}

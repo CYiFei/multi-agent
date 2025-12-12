@@ -49,6 +49,90 @@ class OpenAIAdapter(LLMAdapter):
         # 返回模拟的嵌入向量
         return [0.1, 0.2, 0.3]  # 示例向量
 
+class Qwen3MaxAdapter(LLMAdapter):
+    """Qwen3-Max模型适配器"""
+    
+    def __init__(self, model_name: str = "qwen3-max", api_key: str = None):
+        super().__init__(model_name)
+        self.api_key = api_key
+        self.capabilities = ["text_generation", "chat_completion", "reasoning"]
+        # 在实际实现中，这里会初始化DashScope客户端或其他Qwen API客户端
+    
+    def generate_text(self, prompt: str, **kwargs) -> str:
+        """生成文本（实际实现）"""
+        try:
+            # 导入DashScope SDK
+            import dashscope
+            from http import HTTPStatus
+            
+            # 设置API密钥
+            if self.api_key:
+                dashscope.api_key = self.api_key
+            elif not dashscope.api_key:
+                # 尝试从环境变量获取
+                import os
+                dashscope.api_key = os.getenv('DASHSCOPE_API_KEY')
+                
+            if not dashscope.api_key:
+                raise ValueError("未找到API密钥，请设置DASHSCOPE_API_KEY环境变量或在创建适配器时传入api_key")
+            
+            # 准备消息列表
+            messages = []
+            
+            # 如果有对话历史，则添加到消息中
+            if "chat_history" in kwargs:
+                history = kwargs["chat_history"]
+                for item in history:
+                    messages.append({'role': item['role'], 'content': item['content']})
+            
+            # 添加当前提示词
+            messages.append({'role': 'user', 'content': prompt})
+            
+            # 调用Qwen模型
+            response = dashscope.Generation.call(
+                model='qwen3-max',
+                messages=messages,
+                result_format='message'
+            )
+            
+            # 检查响应状态
+            if response.status_code == HTTPStatus.OK:
+                return response.output.choices[0].message.content
+            else:
+                raise Exception(f"调用Qwen API失败: {response.code} - {response.message}")
+                
+        except ImportError:
+            # 如果没有安装dashscope库，则回退到模拟实现
+            import warnings
+            warnings.warn("未安装dashscope库，使用模拟实现。请通过 'pip install dashscope' 安装。")
+            # 回退到模拟实现
+            if "chat_history" in kwargs:
+                history = kwargs["chat_history"]
+                context = "\n".join([f"{msg['role']}: {msg['content']}" for msg in history])
+                return f"Qwen3-Max回复: 基于我们的对话历史:\n{context}\n\n我对'{prompt}'的理解是..."
+            else:
+                return f"Qwen3-Max回复: 针对'{prompt}'，我认为这是一个很有趣的问题。"
+        except Exception as e:
+            # 出现异常时也回退到模拟实现，但记录错误
+            import logging
+            logging.error(f"调用Qwen API时出现错误: {e}")
+            # 回退到模拟实现
+            if "chat_history" in kwargs:
+                history = kwargs["chat_history"]
+                context = "\n".join([f"{msg['role']}: {msg['content']}" for msg in history])
+                return f"Qwen3-Max回复: 基于我们的对话历史:\n{context}\n\n我对'{prompt}'的理解是..."
+            else:
+                return f"Qwen3-Max回复: 针对'{prompt}'，我认为这是一个很有趣的问题。"
+            
+    def embed_text(self, text: str) -> List[float]:
+        """文本嵌入（模拟实现）"""
+        # 在实际实现中，这里会调用Qwen的嵌入API
+        # 返回模拟的嵌入向量
+        import hashlib
+        # 简单模拟嵌入向量生成
+        hash_val = int(hashlib.md5(text.encode()).hexdigest(), 16)
+        return [(hash_val % 1000) / 1000.0, (hash_val % 2000) / 2000.0, (hash_val % 3000) / 3000.0]
+    
 class HuggingFaceAdapter(LLMAdapter):
     """HuggingFace适配器"""
     

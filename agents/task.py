@@ -2,15 +2,7 @@ from typing import Dict, Any, List, Optional
 from enum import Enum
 import uuid
 import time
-
-class TaskStatus(Enum):
-    """任务状态枚举"""
-    PENDING = "pending"          # 待处理
-    ASSIGNED = "assigned"        # 已分配
-    IN_PROGRESS = "in_progress"  # 进行中
-    COMPLETED = "completed"      # 已完成
-    FAILED = "failed"            # 失败
-    CANCELLED = "cancelled"      # 已取消
+from common.types import TaskStatus
 
 class Task:
     """任务对象"""

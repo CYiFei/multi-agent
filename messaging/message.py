@@ -11,6 +11,7 @@ class MessageType(Enum):
     SYSTEM = "system"
     NOTIFICATION = "notification"
     BROADCAST = "broadcast"
+    CHAT = "chat_message"
 
 class MessagePriority(Enum):
     """消息优先级"""

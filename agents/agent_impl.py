@@ -49,7 +49,7 @@ class BasicAgent(Agent):
         self.conflict_resolver = ConflictResolver(self)
         
         # 注册到路由器
-        self.router.register_agent(agent_id, f"agent.{agent_id}")
+        self.router.register_agent(agent_id, f"agent.{agent_id}", self)
         
         # 设置消息处理器
         self._setup_handlers()
@@ -57,7 +57,7 @@ class BasicAgent(Agent):
         # 初始化完成，更新状态
         self.status = AgentStatus.IDLE
         self.logger.info(f"Agent {agent_id} initialized successfully")
-    
+
     def _setup_handlers(self) -> None:
         """设置默认消息处理器"""
         self.register_handler(MessageType.TASK.value, self._handle_task_message)
@@ -193,8 +193,13 @@ class BasicAgent(Agent):
                 conversation_id=conversation_id
             )
             
+            self.logger.debug(f"Creating message: {message.message_id} from {self.agent_id} to {receiver_id}")
+            
             # 路由消息
-            if self.router.route_message(message):
+            routing_success = self.router.route_message(message)
+            self.logger.debug(f"Routing result for message {message.message_id}: {routing_success}")
+            
+            if routing_success:
                 self.logger.debug(f"Message {message.message_id} sent to {receiver_id}")
                 return message.message_id
             else:
@@ -202,9 +207,9 @@ class BasicAgent(Agent):
                 return ""
         
         except Exception as e:
-            self.logger.error(f"Error sending message: {e}")
+            self.logger.error(f"Error sending message: {e}", exc_info=True)
             return ""
-    
+        
     def get_status(self) -> Dict[str, Any]:
         """获取智能体状态"""
         return {
@@ -238,6 +243,10 @@ class BasicAgent(Agent):
         # 这里可以添加智能体的主动行为逻辑
         # 例如：定期检查状态、执行计划任务等
         self.logger.debug(f"Main loop executed for agent {self.agent_id} with status {self.status.value}")
+        # 更新心跳，不管当前状态是什么
+        current_time = time.time()
+        self.state_manager.set("last_heartbeat", current_time)
+        self.logger.debug(f"Heartbeat from agent {self.agent_id}")
         if self.status == AgentStatus.ACTIVE:
             # 示例：每5秒记录一次心跳
             current_time = time.time()

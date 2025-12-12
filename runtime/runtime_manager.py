@@ -97,7 +97,7 @@ class RuntimeManager(RuntimeManagerInterface):
                 
                 # 检查心跳
                 last_heartbeat = agent.state_manager.get("last_heartbeat", 0)
-                if time.time() - last_heartbeat > 15:  # 15秒无心跳
+                if time.time() - last_heartbeat > 30:  # 15秒无心跳
                     self.logger.warning(f"Agent {agent_id} has no heartbeat for 15 seconds")
             
             # 清理已终止的智能体

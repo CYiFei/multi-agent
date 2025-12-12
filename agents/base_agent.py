@@ -2,20 +2,11 @@ from abc import ABC, abstractmethod
 from typing import Dict, Any, Optional, Callable, List, Union
 import threading
 import time
-from enum import Enum
 
-from messaging.message import Message, MessageType
+from messaging.message import Message
 from messaging.router import MessageRouter
+from common.types import AgentStatus, MessageType
 
-class AgentStatus(Enum):
-    """智能体状态"""
-    INITIALIZING = "initializing"
-    IDLE = "idle"
-    ACTIVE = "active"
-    BUSY = "busy"
-    SUSPENDED = "suspended"
-    TERMINATING = "terminating"
-    TERMINATED = "terminated"
 
 class Agent(ABC):
     """智能体基类 - 定义接口规范"""
@@ -45,8 +36,10 @@ class Agent(ABC):
     
     @abstractmethod
     def _setup_handlers(self) -> None:
-        """设置消息处理器"""
-        pass
+        """设置默认消息处理器"""
+        super()._setup_handlers()
+        # 添加LLM特有的处理器
+        self.register_handler("chat_message", self._handle_chat_message)
     
     @abstractmethod
     def handle_message(self, message: Message) -> Any:
@@ -89,7 +82,7 @@ class Agent(ABC):
     def send_message(
         self, 
         receiver_id: str, 
-        msg_type: Union[MessageType, str], 
+        msg_type: Union[str, MessageType], 
         content: Dict[str, Any],
         priority: int = 2,
         conversation_id: Optional[str] = None
